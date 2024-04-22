@@ -22,7 +22,7 @@ rep_data <- rep_data %>%
 
 rep_data1 <- rep_data %>%
   filter(load_percent == "45") %>% # 45% 1RM
-  select(-"mean_power_1_2_w") %>% # only interested in peak power right now
+  select(-"mean_power_1_2_w") %>% # only interested in peak power right now for the replication outcome
   rename(peak_power = "peak_power_1_2_w")
 
 # Use the best of the two trials for analyses
@@ -45,8 +45,6 @@ anova_rep_data <- wide_rep_data %>%
 
 anova_rep_data$group <-  as.factor(anova_rep_data$group)
 anova_rep_data$time <-  as.factor(anova_rep_data$time)
-
-
 
 ## Descriptives ---------------------
 
@@ -109,12 +107,11 @@ anova_rep_data_afx
 
 summary(anova_rep_data_afx)
 
-
 ### Assumption checking ---------
 
 # Normality test
 
-shapiro.test(anova_rep_data_afx$lm$residuals) # residuals are not normally distributed
+shapiro.test(anova_rep_data_afx$lm$residuals) 
 
 anova_rep_data %>% 
   dplyr::group_by(time) %>% 
@@ -209,7 +206,7 @@ anova_orig_data_afx <- afex::aov_4(
   peak_power ~ group * time + (time | participant),
   data = anova_orig_data,
   anova_table = list(correction = "GG", es = "pes")
-) # using Greenhouse Geisser sphercity correction and partial eta squared
+) # using Greenhouse Geisser sphercity correction if needed and partial eta squared
 anova_orig_data_afx
 
 summary(anova_orig_data_afx)
