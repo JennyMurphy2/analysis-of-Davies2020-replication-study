@@ -8,43 +8,54 @@ library(pastecs)
 library(MOTE)
 library(janitor)
 
+set.seed(21)
+
 # Replication data --------------------------------------------------------------------
+# Overall peak power data ---------------------------
 
 # Load rep_data
 
-rep_data <- read_csv("power_replication_data.csv")
+rep_data <- read_csv("rep_data.csv") %>%
+  clean_names()
 head(rep_data)
 
-# Prepare rep_data
+# 45% 1RM - peak power  -----------------
 
-rep_data <- rep_data %>%
-  clean_names()
+# Separate datasets by load of 1RM 
+peak_data_45 <- rep_data %>%
+  filter(load == "45") %>% # 45% 1RM
+  select(id, group, pre_pp_rep_1:post_pp_rep_2) # only interested in peak power right now
 
-rep_data1 <- rep_data %>%
-  filter(load_percent == "45") %>% # 45% 1RM
-  select(-"mean_power_1_2_w") %>% # only interested in peak power right now for the replication outcome
-  rename(peak_power = "peak_power_1_2_w")
 
-# Use the best of the two trials for analyses
+## Use the best of the two trials for analyses as per original paper
 
-wide_rep_data <- rep_data1 %>% 
-  pivot_wider(id_cols = c(id,group),
-              names_from = time,
-              values_from = peak_power) %>%
+peak_data_45 <- peak_data_45 %>% 
   rowwise() %>%
-  mutate(pre = max(pre_1, pre_2),
-         mid = max(mid_1, mid_2),
-         post = max(post_1, post_2)) %>%
+  mutate(pre = max(pre_pp_rep_1, pre_pp_rep_2, na.rm = TRUE),
+         post = max(post_pp_rep_1, post_pp_rep_2, na.rm = TRUE)) %>%
   as.data.frame()
 
-anova_rep_data <- wide_rep_data %>%
-  select(-c(pre_1:post_2, mid)) %>%
+# Long format data
+
+anova_rep_data <- peak_data_45 %>%
+  select(-c(pre_pp_rep_1:post_pp_rep_2)) %>%
   pivot_longer(cols = c(pre, post),
                names_to = "time",
                values_to = "peak_power") 
 
 anova_rep_data$group <-  as.factor(anova_rep_data$group)
 anova_rep_data$time <-  as.factor(anova_rep_data$time)
+
+
+## Descriptives ---------------------
+
+summary_rep_data <- anova_rep_data %>%
+  group_by(group, time) %>%
+  summarise(count = n (),
+            mean = mean(peak_power),
+            sd = sd(peak_power))
+summary_rep_data
+
 
 ## Descriptives ---------------------
 
@@ -253,8 +264,6 @@ rep_test = TOSTER::compare_cor(r1 = rho_ori,
                                df2 = df_rep,
                                alternative = "greater")
 rep_test
-
-
 
 # Forest plot ---------
 
